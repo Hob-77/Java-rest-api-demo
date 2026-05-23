@@ -37,7 +37,7 @@ A simple product API with full CRUD operations. Public endpoints allow anyone to
 | ORM | JPA / Hibernate |
 | Authentication | JWT via jjwt 0.12.6 |
 | Boilerplate Reduction | Lombok |
-| API Testing | Bruno |
+| API Testing | Bruno / curl |
 
 ---
 
@@ -67,11 +67,17 @@ H2 is used as an in-memory database for simplicity — the schema is created aut
 
 ## Testing
 
-All endpoints were tested manually using [Bruno](https://www.usebruno.com), an open source API testing desktop application. Bruno was used to send HTTP requests, inspect responses, manage the JWT token in the Authorization header, and verify that protected endpoints correctly rejected unauthenticated requests with a 403.
+All endpoints were tested manually using [Bruno](https://www.usebruno.com), an open source API testing desktop application, and curl which is built into Windows 10 (version 1803 and later), Windows 11, Mac, and Linux. Both were used to send HTTP requests, inspect responses, manage the JWT token in the Authorization header, and verify that protected endpoints correctly rejected unauthenticated requests with a 403.
 
 ---
 
-## Running Locally
+## Full Test Cycle Using curl
+
+Run these commands in order to verify the entire API is working. Replace `<token>` with the token returned from the login command.
+
+Note: Steps 2 onwards use Windows Command Prompt syntax with escaped quotes. On Mac / Linux replace `\"` with `'` and wrap the body in single quotes instead.
+
+**1. Start the server**
 
 Windows:
 
@@ -81,20 +87,41 @@ Mac / Linux:
 
     ./mvnw spring-boot:run
 
-Server starts at http://localhost:8080
+**2. Get a token**
 
-To get a JWT token, POST to /api/auth/login with the following body:
+    curl -X POST http://localhost:8080/api/auth/login -H "Content-Type: application/json" -d "{\"username\":\"admin\",\"password\":\"password\"}"
 
-    {
-        "username": "admin",
-        "password": "password"
-    }
+**3. Create a product**
 
-Use the returned token in the Authorization header for protected endpoints:
+    curl -X POST http://localhost:8080/api/products -H "Content-Type: application/json" -H "Authorization: Bearer <token>" -d "{\"name\":\"Heineken\",\"description\":\"Dutch lager\",\"price\":9.99}"
 
-    Authorization: Bearer <token>
+**4. Get all products**
 
-The H2 database console is available at http://localhost:8080/h2-console
+    curl http://localhost:8080/api/products
+
+**5. Get product by ID**
+
+    curl http://localhost:8080/api/products/1
+
+**6. Search by name**
+
+    curl "http://localhost:8080/api/products/search?name=hein"
+
+**7. Delete product**
+
+    curl -X DELETE http://localhost:8080/api/products/1 -H "Authorization: Bearer <token>"
+
+**8. Confirm deletion**
+
+    curl http://localhost:8080/api/products
+
+Expected results in order — token JSON, product with id, array with one product, single product, search result, empty response, empty array.
+
+---
+
+## H2 Database Console
+
+The H2 database console is available at http://localhost:8080/h2-console while the server is running.
 
 Use the following to connect:
 
